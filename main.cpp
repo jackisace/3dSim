@@ -185,6 +185,10 @@ ID3D11InputLayout *pLayout;            // the pointer to the input layout
 ID3D11VertexShader *pVS;               // the pointer to the vertex shader
 ID3D11PixelShader *pPS;                // the pointer to the pixel shader
 ID3D11Buffer *pVBuffer;                // the pointer to the vertex buffer
+ID3D11Buffer *pConstantBuffer;
+
+D3D11_BUFFER_DESC cbd;
+D3D11_SUBRESOURCE_DATA csd = {};
 
 float angle = 0.0f;
 float x = 0.0f;
@@ -200,7 +204,7 @@ tagPOINT mouse;
  struct ConstantBuffer
  {
     dx::XMMATRIX transform;
-};
+}cb;
 
 void RenderFrame(HWND hWnd);     // renders a single frame
 void CleanD3D(void);        // closes Direct3D and releases memory
@@ -418,50 +422,9 @@ void initD3d(HWND hWnd){
         &pLayout);
 
     devcon->IASetInputLayout(pLayout);
-}
 
-
-// this is the function used to render a single frame
-void RenderFrame(HWND hWnd)
-{
 
     
-    /*Vertex vertices[] = 
-    {
-        {ns,ns,ns,      255, 0, 0, 0},
-        {s,ns,ns,       0, 255, 0, 0},
-        {ns,s,ns,       0, 255, 0, 0},
-        {s,s,ns,        255, 0, 0, 0},
-        {ns,ns,s,       255, 0, 0, 0},
-        {s,ns,s,        0, 0, 255, 0},
-        {ns,s,s,        255, 0, 0, 0},
-        {s,s,s,         0, 0, 255, 0},
-    };
-
-
-
-
-    unsigned short indices[] =
-    {
-        0,2,1,2,3,1,
-        1,3,5,3,7,5,
-        2,6,3,3,6,7,
-        4,5,7,4,7,6,
-        0,4,2,2,4,6,
-        0,1,4,1,5,4,
-    };*/
-    
-
-    FLOAT ColorRGBA[4] = {0.3f, 0.2f, 0.4f, 1.0f};
-    // clear the back buffer to a deep blue
-    devcon->ClearRenderTargetView(backbuffer, ColorRGBA);
-
-
-
-    //Vertex vertices[9454];
-    //std::copy(newVertices.begin(), newVertices.end(), vertices);
-    
-    //Vertex* vertices = &newVertices[0];
 
     ID3D11Buffer *pVertexBuffer;
     D3D11_BUFFER_DESC bd;
@@ -478,11 +441,7 @@ void RenderFrame(HWND hWnd)
     const UINT offset = 0u;
     devcon->IASetVertexBuffers(0u, 1u, &pVertexBuffer, &stride, &offset);
 
-    //devcon->IASetVertexBuffers(UINT(0), sizeof(vertices), &pVertexBuffer, sizeof(Vertex), 0)
 
-    //unsigned short indices[12927];
-    //std::copy(newIndices.begin(), newIndices.end(), indices);
-    //unsigned short* indices = &newIndices[0];
 
     ID3D11Buffer *pIndexBuffer;
     D3D11_BUFFER_DESC ibd;
@@ -497,6 +456,47 @@ void RenderFrame(HWND hWnd)
     dev->CreateBuffer(&ibd, &isd, &pIndexBuffer);
     devcon->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R16_UINT, 0u);
 
+        cb = 
+    {
+        {
+            dx::XMMatrixTranspose(
+            dx::XMMatrixRotationX(angle) *
+            dx::XMMatrixRotationY(angle) *
+            dx::XMMatrixRotationZ(angle) *
+            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+            //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 6.0f)
+            dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f)
+            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
+            )
+        }
+    };
+   
+
+    ZeroMemory(&cbd, sizeof(cbd));
+cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+cbd.Usage = D3D11_USAGE_DYNAMIC;
+cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+cbd.MiscFlags = 0u;
+cbd.ByteWidth = sizeof(cb);
+cbd.StructureByteStride = 0u;
+
+csd.pSysMem = &cb;
+
+    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+
+devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+
+// this is the function used to render a single frame
+void RenderFrame(HWND hWnd)
+{
+   
+
+    FLOAT ColorRGBA[4] = {0.3f, 0.2f, 0.4f, 1.0f};
+    // clear the back buffer to a deep blue
+    devcon->ClearRenderTargetView(backbuffer, ColorRGBA);
+
 
 
     GetCursorPos(&mouse);
@@ -507,37 +507,26 @@ void RenderFrame(HWND hWnd)
     if (angle > 10.0f) 
         angle = 0.0f;
         
-    ConstantBuffer cb = 
-    {
-        {
-            dx::XMMatrixTranspose(
-            dx::XMMatrixRotationX(angle) *
-            dx::XMMatrixRotationY(angle) *
-            dx::XMMatrixRotationZ(angle) *
-            dx::XMMatrixScaling(0.25f, 0.25f, 0.25f) *
-            //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 6.0f)
-            dx::XMMatrixTranslation(0.0f, 0.0f, 0.5f)
-            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
-            )
-        }
-    };
-   
-
-    ID3D11Buffer *pConstantBuffer;
-    D3D11_BUFFER_DESC cbd;
-    ZeroMemory(&cbd, sizeof(cbd));
-    cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbd.Usage = D3D11_USAGE_DYNAMIC;
-    cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    cbd.MiscFlags = 0u;
-    cbd.ByteWidth = sizeof(cb);
-    cbd.StructureByteStride = 0u;
-    D3D11_SUBRESOURCE_DATA csd = {};
-    csd.pSysMem = &cb;
+    cb = {
+            {
+                dx::XMMatrixTranspose(
+                            //dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationY(angle) *
+                            //dx::XMMatrixRotationZ(angle) *
+                            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+                            dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
+                            //dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
+                            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
+                )
+            }
+        };
     dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
     devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
 
-    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+
+
+    
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
     swapchain->Present(0, 0);
    
@@ -601,6 +590,7 @@ void CleanD3D(void)
     backbuffer->Release();
     dev->Release();
     devcon->Release();
+
 }
 
 
