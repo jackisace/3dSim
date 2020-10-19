@@ -1,4 +1,3 @@
-// include the basic windows header files and the Direct3D header files
 #include <windows.h>
 #include <windowsx.h>
 #include <d3d11.h>
@@ -15,8 +14,31 @@
 #include <fstream>
 #include <math.h>
 
-using namespace std;
+#pragma comment (lib, "d3d11.lib")
+#pragma comment (lib, "kernel32.lib")
+#pragma comment (lib, "d3dcsx.lib")
+#pragma comment (lib, "user32.lib")
+#pragma comment (lib, "D3DCompiler.lib")
+#pragma comment (lib, "Dxgi.lib")
+#pragma comment (lib, "dxguid.lib")
 
+#define SCREEN_WIDTH  1000
+#define SCREEN_HEIGHT 750
+
+IDXGISwapChain *swapchain;             
+ID3D11Device *dev;                     
+ID3D11DeviceContext *devcon;           
+ID3D11RenderTargetView *backbuffer;    
+ID3D11InputLayout *pLayout;            
+ID3D11VertexShader *pVS;               
+ID3D11PixelShader *pPS;                
+ID3D11Buffer *pVBuffer;                
+ID3D11Buffer *pConstantBuffer;
+D3D11_BUFFER_DESC cbd;
+D3D11_SUBRESOURCE_DATA csd = {};
+
+using namespace std;
+namespace dx = DirectX;
 
 struct Vertex{
     float x;
@@ -31,7 +53,6 @@ struct Vertex{
 struct Index{
 	unsigned int a, b, c;
 };
-
 
 Index indices[4309];
 Vertex vertices[4727];
@@ -157,38 +178,7 @@ int loadObj()
 }
 
 
-namespace dx = DirectX;
 
-
-
-// include the Direct3D Library file
-
-#pragma comment (lib, "d3d11.lib")
-#pragma comment (lib, "kernel32.lib")
-#pragma comment (lib, "d3dcsx.lib")
-#pragma comment (lib, "user32.lib")
-#pragma comment (lib, "D3DCompiler.lib")
-#pragma comment (lib, "Dxgi.lib")
-#pragma comment (lib, "dxguid.lib")
-//#pragma comment (lib, "assimp-vc140-mt.lib")
-
-// define the screen resolution
-#define SCREEN_WIDTH  1000
-#define SCREEN_HEIGHT 750
-
-// global declarations
-IDXGISwapChain *swapchain;             // the pointer to the swap chain interface
-ID3D11Device *dev;                     // the pointer to our Direct3D device interface
-ID3D11DeviceContext *devcon;           // the pointer to our Direct3D device context
-ID3D11RenderTargetView *backbuffer;    // the pointer to our back buffer
-ID3D11InputLayout *pLayout;            // the pointer to the input layout
-ID3D11VertexShader *pVS;               // the pointer to the vertex shader
-ID3D11PixelShader *pPS;                // the pointer to the pixel shader
-ID3D11Buffer *pVBuffer;                // the pointer to the vertex buffer
-ID3D11Buffer *pConstantBuffer;
-
-D3D11_BUFFER_DESC cbd;
-D3D11_SUBRESOURCE_DATA csd = {};
 
 float angle = 0.0f;
 float x = 0.0f;
@@ -201,20 +191,18 @@ tagPOINT mouse;
     float ns = s * -1;
 
 
- struct ConstantBuffer
- {
+struct ConstantBuffer
+{
     dx::XMMATRIX transform;
-}cb;
+} cb;
 
-void RenderFrame(HWND hWnd);     // renders a single frame
-void CleanD3D(void);        // closes Direct3D and releases memory
+void RenderFrame(HWND hWnd);
+void CleanD3D(void);        
 void initD3d(HWND hWnd);
 
-// the WindowProc function prototype
+
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-
-// the entry point for any Windows program
 int WINAPI WinMain(HINSTANCE hInstance,
                    HINSTANCE hPrevInstance,
                    LPSTR lpCmdLine,
@@ -225,15 +213,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	loadObj();
 
-    //objLoad("P-51 Mustang.obj");
-	
-    
     HWND hWnd;
     WNDCLASSEX wc;
-
-    //MessageBoxW(hWnd, L"LOL", L"LOL", MB_OK);
-	
-
     
     ZeroMemory(&wc, sizeof(WNDCLASSEX));
 
@@ -264,16 +245,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     ShowWindow(hWnd, nCmdShow);
     
-    
-
-    // set up and initialize Direct3D
     initD3d(hWnd);
 
-         
-
-
-    // enter the main loop:
-    
     MSG msg;
     
     while(TRUE)
@@ -288,23 +261,18 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 break;
             }
         }
-
         RenderFrame(hWnd);
-
-      
     }
 
-    // clean up DirectX and COM
     CleanD3D();
 
     return msg.wParam;
 }
 
 
-// this is the main message handler for the program
+
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    
     switch(message)
     {
         case WM_DESTROY:
@@ -313,41 +281,27 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
                 return 0;
             } break;
     }
-
     return DefWindowProc (hWnd, message, wParam, lParam);
 }
 
 
 
-
-
-
-
-
-
-
-
-
-
 void initD3d(HWND hWnd){
-    // create a struct to hold information about the swap chain
     DXGI_SWAP_CHAIN_DESC scd;
 
-    // clear out the struct for use
     ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
 
-    // fill the swap chain description struct
-    scd.BufferCount = 1;                                   // one back buffer
-    scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;    // use 32-bit color
-    scd.BufferDesc.Width = SCREEN_WIDTH;                   // set the back buffer width
-    scd.BufferDesc.Height = SCREEN_HEIGHT;                 // set the back buffer height
-    scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;     // how swap chain is to be used
-    scd.OutputWindow = hWnd;                               // the window to be used
-    scd.SampleDesc.Count = 4;                              // how many multisamples
-    scd.Windowed = TRUE;                                   // windowed/full-screen mode
-    scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;    // allow full-screen switching
+    scd.BufferCount = 1;                                   
+    scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;    
+    scd.BufferDesc.Width = SCREEN_WIDTH;                   
+    scd.BufferDesc.Height = SCREEN_HEIGHT;                 
+    scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;     
+    scd.OutputWindow = hWnd;                               
+    scd.SampleDesc.Count = 4;                              
+    scd.Windowed = TRUE;                                   
+    scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;    
 
-    // create a device, device context and swap chain using the information in the scd struct
+
     D3D11CreateDeviceAndSwapChain(NULL,
                                   D3D_DRIVER_TYPE_HARDWARE,
                                   NULL,
@@ -361,20 +315,14 @@ void initD3d(HWND hWnd){
                                   NULL,
                                   &devcon);
 
-
-    // get the address of the back buffer
     winrt::com_ptr<ID3D11Texture2D> pBackBuffer;
     swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
 
-    // use the back buffer address to create the render target
     dev->CreateRenderTargetView(pBackBuffer.get(), NULL, &backbuffer);
     pBackBuffer->Release();
 
-    // set the render target as the back buffer
     devcon->OMSetRenderTargets(1, &backbuffer, NULL);
 
-
-    // Set the viewport
     D3D11_VIEWPORT viewport;
     ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 
@@ -386,34 +334,23 @@ void initD3d(HWND hWnd){
     viewport.Height = SCREEN_HEIGHT;
 
     devcon->RSSetViewports(1, &viewport);
-    
-
-   
 
     ID3DBlob *VS, *PS;
-
-    
 
     D3DCompileFromFile(L"vertexShader.hlsl", NULL, NULL, "main", "vs_4_0", 0, 0, &VS, &VS);
     D3DCompileFromFile(L"pixelShader.hlsl", NULL, NULL, "main", "ps_4_0", 0, 0, &PS, &PS);
 
-    // encapsulate both shaders into shader objects
     dev->CreateVertexShader(VS->GetBufferPointer(), VS->GetBufferSize(), NULL, &pVS);
     dev->CreatePixelShader(PS->GetBufferPointer(), PS->GetBufferSize(), NULL, &pPS);
 
-    // set the shader objects
     devcon->VSSetShader(pVS, 0, 0);
     devcon->PSSetShader(pPS, 0, 0);
 
-    // create the input layout object
     const D3D11_INPUT_ELEMENT_DESC ied[] =
     {
         {"Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"Color", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    };
-
-    //MessageBoxW(hWnd, (LPCWSTR)std::size(ied), L"LOL", MB_OK);
-    
+    };  
     
     dev->CreateInputLayout(
         ied, (UINT)std::size(ied), 
@@ -422,9 +359,6 @@ void initD3d(HWND hWnd){
         &pLayout);
 
     devcon->IASetInputLayout(pLayout);
-
-
-    
 
     ID3D11Buffer *pVertexBuffer;
     D3D11_BUFFER_DESC bd;
@@ -441,8 +375,6 @@ void initD3d(HWND hWnd){
     const UINT offset = 0u;
     devcon->IASetVertexBuffers(0u, 1u, &pVertexBuffer, &stride, &offset);
 
-
-
     ID3D11Buffer *pIndexBuffer;
     D3D11_BUFFER_DESC ibd;
     ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;   
@@ -456,52 +388,41 @@ void initD3d(HWND hWnd){
     dev->CreateBuffer(&ibd, &isd, &pIndexBuffer);
     devcon->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R16_UINT, 0u);
 
-        cb = 
-    {
-        {
-            dx::XMMatrixTranspose(
-            dx::XMMatrixRotationX(angle) *
-            dx::XMMatrixRotationY(angle) *
-            dx::XMMatrixRotationZ(angle) *
-            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
-            //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 6.0f)
-            dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f)
-            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
-            )
-        }
-    };
+    cb = {
+            {
+                dx::XMMatrixTranspose(
+                            //dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationY(angle) *
+                            //dx::XMMatrixRotationZ(angle) *
+                            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+                            dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
+                            //dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
+                            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
+                )
+            }
+        };
    
-
     ZeroMemory(&cbd, sizeof(cbd));
-cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-cbd.Usage = D3D11_USAGE_DYNAMIC;
-cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-cbd.MiscFlags = 0u;
-cbd.ByteWidth = sizeof(cb);
-cbd.StructureByteStride = 0u;
-
-csd.pSysMem = &cb;
-
+    cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbd.Usage = D3D11_USAGE_DYNAMIC;
+    cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    cbd.MiscFlags = 0u;
+    cbd.ByteWidth = sizeof(cb);
+    cbd.StructureByteStride = 0u;
+    csd.pSysMem = &cb;
     dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
-
-devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 
-// this is the function used to render a single frame
+
 void RenderFrame(HWND hWnd)
 {
-   
-
     FLOAT ColorRGBA[4] = {0.3f, 0.2f, 0.4f, 1.0f};
-    // clear the back buffer to a deep blue
     devcon->ClearRenderTargetView(backbuffer, ColorRGBA);
-
-
 
     GetCursorPos(&mouse);
     ScreenToClient(hWnd, &mouse);
-
       
     angle += 0.001f;
     if (angle > 10.0f) 
@@ -522,10 +443,6 @@ void RenderFrame(HWND hWnd)
         };
     dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
     devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
-
-
-
-
     
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
     swapchain->Present(0, 0);
@@ -533,55 +450,9 @@ void RenderFrame(HWND hWnd)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// this is the function that cleans up Direct3D and COM
 void CleanD3D(void)
 {
-    swapchain->SetFullscreenState(FALSE, NULL);    // switch to windowed mode
-
-    // close and release all existing COM objects
+    swapchain->SetFullscreenState(FALSE, NULL);
     pLayout->Release();
     pVS->Release();
     pPS->Release();
@@ -590,7 +461,6 @@ void CleanD3D(void)
     backbuffer->Release();
     dev->Release();
     devcon->Release();
-
 }
 
 
