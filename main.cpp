@@ -435,16 +435,50 @@ void RenderFrame(HWND hWnd)
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
                             dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
-                            dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
-                            //dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
+                            //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
+                            dx::XMMatrixTranslation(0.0f, -0.5f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
                 )
             }
         };
     dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
     devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
-    
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+
+cb = {
+            {
+                dx::XMMatrixTranspose(
+                            //dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationY(angle) *
+                            //dx::XMMatrixRotationZ(angle) *
+                            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+                            //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
+                            dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
+                            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
+                )
+            }
+        };
+    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
+    devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+
+    cb = {
+            {
+                dx::XMMatrixTranspose(
+                            //dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationY(angle) *
+                            //dx::XMMatrixRotationZ(angle) *
+                            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+                            //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
+                            dx::XMMatrixTranslation(0.0f, 0.0f, 0.1f) 
+                            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
+                )
+            }
+        };
+    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
+    devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+
     swapchain->Present(0, 0);
    
 }
