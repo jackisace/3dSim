@@ -25,14 +25,13 @@
 #define SCREEN_WIDTH  1000
 #define SCREEN_HEIGHT 750
 
-IDXGISwapChain *swapchain;             
-ID3D11Device *dev;                     
-ID3D11DeviceContext *devcon;           
-ID3D11RenderTargetView *backbuffer;    
-ID3D11InputLayout *pLayout;            
-ID3D11VertexShader *pVS;               
-ID3D11PixelShader *pPS;                
-ID3D11Buffer *pVBuffer;                
+IDXGISwapChain *swapchain;
+ID3D11Device *dev;
+ID3D11DeviceContext *devcon;
+ID3D11RenderTargetView *backbuffer;
+ID3D11InputLayout *pLayout;
+ID3D11VertexShader *pVS;
+ID3D11PixelShader *pPS;
 ID3D11Buffer *pConstantBuffer;
 D3D11_BUFFER_DESC cbd;
 D3D11_SUBRESOURCE_DATA csd = {};
@@ -56,7 +55,7 @@ struct Index{
 
 Index indices[4309];
 Vertex vertices[4727];
-
+unsigned int check = 0;
 string curline;
 
 Vertex getFloats(string in)
@@ -232,7 +231,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     hWnd = CreateWindowEx(NULL,
                           "WindowClass",
-                          "My First Direct3D Program",
+                          "Typhoon Simulation",
                           WS_OVERLAPPEDWINDOW,
                           300,
                           300,
@@ -394,7 +393,7 @@ void initD3d(HWND hWnd){
                             //dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
                             dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             //dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -418,6 +417,7 @@ void initD3d(HWND hWnd){
 
 void RenderFrame(HWND hWnd)
 {
+    check += 1;
     FLOAT ColorRGBA[4] = {0.3f, 0.2f, 0.4f, 1.0f};
     devcon->ClearRenderTargetView(backbuffer, ColorRGBA);
 
@@ -434,7 +434,7 @@ void RenderFrame(HWND hWnd)
                             //dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.0f, -0.5f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -442,8 +442,10 @@ void RenderFrame(HWND hWnd)
             }
         };
     dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    int res;
     devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+    pConstantBuffer->Release();
 
 cb = {
             {
@@ -451,7 +453,7 @@ cb = {
                             //dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -461,6 +463,7 @@ cb = {
     dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
     devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+    pConstantBuffer->Release();
 
     cb = {
             {
@@ -468,7 +471,7 @@ cb = {
                             //dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.0001f, 0.0001f, 0.0001f) *
+                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.0f, 0.0f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -478,8 +481,75 @@ cb = {
     dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
     devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+    pConstantBuffer->Release();
+
+        cb = {
+            {
+                dx::XMMatrixTranspose(
+                            //dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationY(angle) *
+                            //dx::XMMatrixRotationZ(angle) *
+                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
+                            //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
+                            dx::XMMatrixTranslation(-0.5f, 0.0f, 0.1f) 
+                            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
+                )
+            }
+        };
+    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
+    devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+    pConstantBuffer->Release();
+
+        cb = {
+            {
+                dx::XMMatrixTranspose(
+                            //dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationY(angle) *
+                            //dx::XMMatrixRotationZ(angle) *
+                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
+                            //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
+                            dx::XMMatrixTranslation(0.5f, 0.0f, 0.1f) 
+                            //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
+                )
+            }
+        };
+    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
+    //Exception thrown at 0x76CF4662 in main.exe: Microsoft C++ exception: _com_error at memory location 0x010FDE44.
+    //check = 134791
+    devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+    pConstantBuffer->Release();
 
     swapchain->Present(0, 0);
+
+    if(check == 100000)
+        cout << check << endl;
+    if(check == 200000)
+        cout << check << endl;
+   if(check == 300000)
+        cout << check << endl;
+   if(check == 400000)
+        cout << check << endl;
+   if(check == 500000)
+        cout << check << endl;
+   if(check == 600000)
+        cout << check << endl;
+   if(check == 700000)
+        cout << check << endl;
+    if(check == 800000)
+        cout << check << endl;
+   if(check == 900000)
+        cout << check << endl;
+   if(check == 1000000)
+        cout << check << endl;
+   if(check == 1100000)
+        cout << check << endl;
+   
+   
+   
+       
+   
    
 }
 
@@ -490,11 +560,11 @@ void CleanD3D(void)
     pLayout->Release();
     pVS->Release();
     pPS->Release();
-    pVBuffer->Release();
     swapchain->Release();
     backbuffer->Release();
     dev->Release();
     devcon->Release();
+    pConstantBuffer->Release();
 }
 
 
