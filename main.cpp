@@ -50,14 +50,19 @@ struct Vertex{
 };
 
 struct Index{
-	unsigned int a, b, c;
+	uint16_t a, b, c;
 };
+
+//vector<Index> indices;
+//vector<Vertex> vertices;
 
 Index indices[4309];
 Vertex vertices[4727];
+
 unsigned int check = 0;
 string curline;
-
+HRESULT hr;
+HRESULT hrr;
 Vertex getFloats(string in)
 {
 	Vertex fOut;
@@ -84,15 +89,10 @@ Vertex getFloats(string in)
 	fOut.y = stof(strV[1]);
 	fOut.z = stof(strV[2]);
 
-    unsigned char r = 0;
-    unsigned char g = 255;
-    unsigned char b = 0;
-    unsigned char a = 0;
-
-	fOut.r = r;
-	fOut.g = g;
-	fOut.b = b;
-	fOut.a = a;
+	fOut.r = 0;
+	fOut.g = 255;
+	fOut.b = 0;
+	fOut.a = 0;
 
 	return fOut;
 }
@@ -100,7 +100,6 @@ Vertex getFloats(string in)
 Index getUint(string in)
 {
 	Index out;
-	unsigned int uint[3];
 	int spc;
 	int sls;
 	string strV[3];
@@ -160,18 +159,21 @@ int loadObj()
 
 		if(first == vCheck && second == space){
 			vertices[vertex] = getFloats(curline);
+			//vertices.push_back(getFloats(curline));
 			vertex += 1;
 		}
 
 		if(first == fCheck && second == space){
 			indices[indice] = getUint(curline);
+			//indices.push_back(getUint(curline));
 			indice += 1;
 		}
 
 		curline.clear();
 	}
-	cout << "Vertex count : " << vertex << "\n";
-	cout << "Indice count : " << indice << "\n";
+	//cout << "Vertex count : " << vertices.size() << "\n";
+
+	//cout << "Indice count : " << indices.size() << "\n";
 
 	return 1;
 }
@@ -301,10 +303,10 @@ void initD3d(HWND hWnd){
     scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;    
 
 
-    D3D11CreateDeviceAndSwapChain(NULL,
+    hrr = D3D11CreateDeviceAndSwapChain(NULL,
                                   D3D_DRIVER_TYPE_HARDWARE,
                                   NULL,
-                                  NULL,
+                                  D3D11_CREATE_DEVICE_DEBUG,
                                   NULL,
                                   NULL,
                                   D3D11_SDK_VERSION,
@@ -362,14 +364,15 @@ void initD3d(HWND hWnd){
     ID3D11Buffer *pVertexBuffer;
     D3D11_BUFFER_DESC bd;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;   
-    bd.ByteWidth = sizeof(vertices);  
+    bd.ByteWidth = sizeof(vertices) * sizeof(Vertex);  
     bd.CPUAccessFlags = 0u;
     bd.MiscFlags = 0u;
     bd.Usage = D3D11_USAGE_DEFAULT;                
     bd.StructureByteStride = sizeof(Vertex);
     D3D11_SUBRESOURCE_DATA sd = {};
-    sd.pSysMem = vertices;
-    dev->CreateBuffer(&bd, &sd, &pVertexBuffer);
+    sd.pSysMem = &vertices[0];
+    hr = dev->CreateBuffer(&bd, &sd, &pVertexBuffer);
+    cout << hr << endl;
     const UINT stride = sizeof(Vertex);
     const UINT offset = 0u;
     devcon->IASetVertexBuffers(0u, 1u, &pVertexBuffer, &stride, &offset);
@@ -377,15 +380,16 @@ void initD3d(HWND hWnd){
     ID3D11Buffer *pIndexBuffer;
     D3D11_BUFFER_DESC ibd;
     ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;   
-    ibd.ByteWidth = sizeof(indices);  
+    ibd.ByteWidth = sizeof(indices) * sizeof(Index);  
     ibd.CPUAccessFlags = 0u;
     ibd.MiscFlags = 0u;
     ibd.Usage = D3D11_USAGE_DEFAULT;                
     ibd.StructureByteStride = sizeof(Index);
     D3D11_SUBRESOURCE_DATA isd = {};
-    isd.pSysMem = indices;
-    dev->CreateBuffer(&ibd, &isd, &pIndexBuffer);
-    devcon->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R16_UINT, 0u);
+    isd.pSysMem = &indices[0];
+    hr = dev->CreateBuffer(&ibd, &isd, &pIndexBuffer);
+    cout << hr << endl;
+    devcon->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
     cb = {
             {
@@ -409,7 +413,8 @@ void initD3d(HWND hWnd){
     cbd.ByteWidth = sizeof(cb);
     cbd.StructureByteStride = 0u;
     csd.pSysMem = &cb;
-    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    hr = dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    cout << hr << endl;
     devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
@@ -441,10 +446,11 @@ void RenderFrame(HWND hWnd)
                 )
             }
         };
-    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    hr = dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
     int res;
     devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
+    
     pConstantBuffer->Release();
 
 cb = {
@@ -521,8 +527,9 @@ cb = {
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
     pConstantBuffer->Release();
 
-    swapchain->Present(0, 0);
-
+    hr = swapchain->Present(0, 0);
+    cout << hr << endl;
+    cout << hrr << endl;
     if(check == 100000)
         cout << check << endl;
     if(check == 200000)
