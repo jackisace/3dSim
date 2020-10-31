@@ -35,9 +35,13 @@ ID3D11PixelShader *pPS;
 ID3D11Buffer *pConstantBuffer;
 D3D11_BUFFER_DESC cbd;
 D3D11_SUBRESOURCE_DATA csd = {};
+winrt::com_ptr<ID3D11Texture2D> pBackBuffer;
 
 using namespace std;
 namespace dx = DirectX;
+
+
+
 
 struct Vertex{
     float x;
@@ -49,20 +53,16 @@ struct Vertex{
     unsigned char a;
 };
 
+
 struct Index{
 	uint16_t a, b, c;
 };
 
-//vector<Index> indices;
-//vector<Vertex> vertices;
-
 Index indices[4309];
 Vertex vertices[4727];
-
 unsigned int check = 0;
 string curline;
-HRESULT hr;
-HRESULT hrr;
+
 Vertex getFloats(string in)
 {
 	Vertex fOut;
@@ -100,6 +100,7 @@ Vertex getFloats(string in)
 Index getUint(string in)
 {
 	Index out;
+	unsigned int uint[3];
 	int spc;
 	int sls;
 	string strV[3];
@@ -159,21 +160,18 @@ int loadObj()
 
 		if(first == vCheck && second == space){
 			vertices[vertex] = getFloats(curline);
-			//vertices.push_back(getFloats(curline));
 			vertex += 1;
 		}
 
 		if(first == fCheck && second == space){
 			indices[indice] = getUint(curline);
-			//indices.push_back(getUint(curline));
 			indice += 1;
 		}
 
 		curline.clear();
 	}
-	//cout << "Vertex count : " << vertices.size() << "\n";
-
-	//cout << "Indice count : " << indices.size() << "\n";
+	cout << "Vertex count : " << vertex << "\n";
+	cout << "Indice count : " << indice << "\n";
 
 	return 1;
 }
@@ -303,10 +301,10 @@ void initD3d(HWND hWnd){
     scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;    
 
 
-    hrr = D3D11CreateDeviceAndSwapChain(NULL,
+    D3D11CreateDeviceAndSwapChain(NULL,
                                   D3D_DRIVER_TYPE_HARDWARE,
                                   NULL,
-                                  D3D11_CREATE_DEVICE_DEBUG,
+                                  NULL,
                                   NULL,
                                   NULL,
                                   D3D11_SDK_VERSION,
@@ -316,13 +314,94 @@ void initD3d(HWND hWnd){
                                   NULL,
                                   &devcon);
 
-    winrt::com_ptr<ID3D11Texture2D> pBackBuffer;
+    
     swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
 
     dev->CreateRenderTargetView(pBackBuffer.get(), NULL, &backbuffer);
-    pBackBuffer->Release();
 
-    devcon->OMSetRenderTargets(1, &backbuffer, NULL);
+
+ID3D11Texture2D* pDepthStencil = NULL;
+D3D11_TEXTURE2D_DESC descDepth;
+descDepth.Width = SCREEN_WIDTH;
+descDepth.Height = SCREEN_HEIGHT;
+descDepth.MipLevels = 1;
+descDepth.ArraySize = 1;
+descDepth.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+descDepth.SampleDesc.Count = 1;
+descDepth.SampleDesc.Quality = 0;
+descDepth.Usage = D3D11_USAGE_DEFAULT;
+descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+descDepth.CPUAccessFlags = 0;
+descDepth.MiscFlags = 0;
+dev->CreateTexture2D( &descDepth, NULL, &pDepthStencil );
+
+    D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+// Depth test parameters
+dsDesc.DepthEnable = true;
+dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+// Stencil test parameters
+dsDesc.StencilEnable = true;
+dsDesc.StencilReadMask = 0xFF;
+dsDesc.StencilWriteMask = 0xFF;
+
+// Stencil operations if pixel is front-facing
+dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+// Stencil operations if pixel is back-facing
+dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+// Create depth stencil state
+ID3D11DepthStencilState * pDSState;
+dev->CreateDepthStencilState(&dsDesc, &pDSState);
+
+// Bind depth stencil state
+devcon->OMSetDepthStencilState(pDSState, 1);
+
+D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+descDSV.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+descDSV.Texture2D.MipSlice = 0;
+
+// Create the depth stencil view
+ID3D11DepthStencilView* pDSV;
+dev->CreateDepthStencilView( pDepthStencil, // Depth stencil texture
+                                         &descDSV, // Depth stencil desc
+                                         &pDSV );  // [out] Depth stencil view
+
+// Bind the depth stencil view
+devcon->OMSetRenderTargets( 1,          // One rendertarget view
+                                &backbuffer,      // Render target view, created earlier
+                                pDSV );     // Depth stencil view for the render target
+
+
+    ID3D11RasterizerState *rasState;
+    D3D11_RASTERIZER_DESC pRasterizerDesc = {};
+    pRasterizerDesc.AntialiasedLineEnable = FALSE;
+    pRasterizerDesc.CullMode = D3D11_CULL_NONE;
+    pRasterizerDesc.DepthBias = 1;
+    pRasterizerDesc.DepthBiasClamp = 1.0f;
+    pRasterizerDesc.DepthClipEnable = FALSE;
+    pRasterizerDesc.FillMode = D3D11_FILL_SOLID;
+    pRasterizerDesc.FrontCounterClockwise = TRUE;
+    pRasterizerDesc.MultisampleEnable = TRUE;
+    pRasterizerDesc.ScissorEnable = FALSE;
+    pRasterizerDesc.SlopeScaledDepthBias = 1.0f;
+    dev->CreateRasterizerState(&pRasterizerDesc, &rasState);
+    devcon->RSSetState(rasState);
+
+
+    
+
+    //devcon->OMSetRenderTargets(1, &backbuffer, NULL);
 
     D3D11_VIEWPORT viewport;
     ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
@@ -364,15 +443,14 @@ void initD3d(HWND hWnd){
     ID3D11Buffer *pVertexBuffer;
     D3D11_BUFFER_DESC bd;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;   
-    bd.ByteWidth = sizeof(vertices) * sizeof(Vertex);  
+    bd.ByteWidth = sizeof(vertices);  
     bd.CPUAccessFlags = 0u;
     bd.MiscFlags = 0u;
     bd.Usage = D3D11_USAGE_DEFAULT;                
     bd.StructureByteStride = sizeof(Vertex);
     D3D11_SUBRESOURCE_DATA sd = {};
-    sd.pSysMem = &vertices[0];
-    hr = dev->CreateBuffer(&bd, &sd, &pVertexBuffer);
-    cout << hr << endl;
+    sd.pSysMem = vertices;
+    dev->CreateBuffer(&bd, &sd, &pVertexBuffer);
     const UINT stride = sizeof(Vertex);
     const UINT offset = 0u;
     devcon->IASetVertexBuffers(0u, 1u, &pVertexBuffer, &stride, &offset);
@@ -380,16 +458,15 @@ void initD3d(HWND hWnd){
     ID3D11Buffer *pIndexBuffer;
     D3D11_BUFFER_DESC ibd;
     ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;   
-    ibd.ByteWidth = sizeof(indices) * sizeof(Index);  
+    ibd.ByteWidth = sizeof(indices);  
     ibd.CPUAccessFlags = 0u;
     ibd.MiscFlags = 0u;
     ibd.Usage = D3D11_USAGE_DEFAULT;                
     ibd.StructureByteStride = sizeof(Index);
     D3D11_SUBRESOURCE_DATA isd = {};
-    isd.pSysMem = &indices[0];
-    hr = dev->CreateBuffer(&ibd, &isd, &pIndexBuffer);
-    cout << hr << endl;
-    devcon->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+    isd.pSysMem = indices;
+    dev->CreateBuffer(&ibd, &isd, &pIndexBuffer);
+    devcon->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R16_UINT, 0u);
 
     cb = {
             {
@@ -413,8 +490,7 @@ void initD3d(HWND hWnd){
     cbd.ByteWidth = sizeof(cb);
     cbd.StructureByteStride = 0u;
     csd.pSysMem = &cb;
-    hr = dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
-    cout << hr << endl;
+    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
     devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
@@ -446,11 +522,10 @@ void RenderFrame(HWND hWnd)
                 )
             }
         };
-    hr = dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
+    dev->CreateBuffer(&cbd, &csd, &pConstantBuffer);
     int res;
     devcon->VSSetConstantBuffers(0u, 1u, &pConstantBuffer);
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
-    
     pConstantBuffer->Release();
 
 cb = {
@@ -458,7 +533,7 @@ cb = {
                 dx::XMMatrixTranspose(
                             //dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
-                            //dx::XMMatrixRotationZ(angle) *
+                            dx::XMMatrixRotationZ(angle) *
                             dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
@@ -474,8 +549,8 @@ cb = {
     cb = {
             {
                 dx::XMMatrixTranspose(
-                            //dx::XMMatrixRotationX(angle) *
-                            dx::XMMatrixRotationY(angle) *
+                            dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationY(-angle) *
                             //dx::XMMatrixRotationZ(angle) *
                             dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
@@ -492,12 +567,12 @@ cb = {
         cb = {
             {
                 dx::XMMatrixTranspose(
-                            //dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationX(-angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
                             dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
-                            dx::XMMatrixTranslation(-0.5f, 0.0f, 0.1f) 
+                            dx::XMMatrixTranslation(-0.5f, 0.0f, 10000.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
                 )
             }
@@ -510,10 +585,10 @@ cb = {
         cb = {
             {
                 dx::XMMatrixTranspose(
-                            //dx::XMMatrixRotationX(angle) *
+                            dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
+                            dx::XMMatrixScaling(0.0005f, 0.0005f, 0.0005f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.5f, 0.0f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -527,9 +602,8 @@ cb = {
     devcon->DrawIndexed((UINT)sizeof(indices), 0u, 0u);
     pConstantBuffer->Release();
 
-    hr = swapchain->Present(0, 0);
-    cout << hr << endl;
-    cout << hrr << endl;
+    swapchain->Present(0, 0);
+
     if(check == 100000)
         cout << check << endl;
     if(check == 200000)
@@ -572,6 +646,7 @@ void CleanD3D(void)
     dev->Release();
     devcon->Release();
     pConstantBuffer->Release();
+    pBackBuffer->Release();
 }
 
 
