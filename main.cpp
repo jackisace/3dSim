@@ -58,8 +58,10 @@ struct Index{
 	uint16_t a, b, c;
 };
 
-Index indices[4309];
-Vertex vertices[4727];
+
+
+Index indices[22546];
+Vertex vertices[23318];
 unsigned int check = 0;
 string curline;
 
@@ -69,7 +71,7 @@ Vertex getFloats(string in)
 	string strV[3];
 	in.erase(0,2);
 	int spc;
-	
+	// v 0.086328 -0.124821 0.210253
 
 	spc = in.find(" ") + 1;
 	strV[0] = in.substr(0, spc);
@@ -138,7 +140,7 @@ int loadObj()
 {
 	cout << "start:" << endl;
 
-	ifstream file("P-51 Mustang.obj");
+	ifstream file("Eurofighter.obj");
 
 	if(!file.is_open())
 		return false;
@@ -474,7 +476,7 @@ devcon->OMSetRenderTargets( 1,          // One rendertarget view
                             //dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
+                            dx::XMMatrixScaling(0.03f, 0.03f, 0.03f) *
                             dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             //dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -515,7 +517,7 @@ void RenderFrame(HWND hWnd)
                             //dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
+                            dx::XMMatrixScaling(0.03f, 0.03f, 0.03f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.0f, -0.5f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -534,7 +536,7 @@ cb = {
                             //dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
+                            dx::XMMatrixScaling(0.03f, 0.03f, 0.03f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.0f, 0.5f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -552,7 +554,7 @@ cb = {
                             dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(-angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
+                            dx::XMMatrixScaling(0.03f, 0.03f, 0.03f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.0f, 0.0f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -570,7 +572,7 @@ cb = {
                             dx::XMMatrixRotationX(-angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.00005f, 0.00005f, 0.00005f) *
+                            dx::XMMatrixScaling(0.03f, 0.03f, 0.03f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(-0.5f, 0.0f, 10000.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
@@ -588,7 +590,7 @@ cb = {
                             dx::XMMatrixRotationX(angle) *
                             dx::XMMatrixRotationY(angle) *
                             //dx::XMMatrixRotationZ(angle) *
-                            dx::XMMatrixScaling(0.0005f, 0.0005f, 0.0005f) *
+                            dx::XMMatrixScaling(0.03f, 0.03f, 0.03f) *
                             //dx::XMMatrixTranslation(mouse.x/400.0f - 1.0f, -mouse.y/300.0f + 1.0f, 0.5f) 
                             dx::XMMatrixTranslation(0.5f, 0.0f, 0.1f) 
                             //dx::XMMatrixPerspectiveLH(1.0f, 3.0f/4.0f, 0.5f, 10.0f)
